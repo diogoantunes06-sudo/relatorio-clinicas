@@ -73,7 +73,13 @@ textarea{min-height:84px;resize:vertical}
 table.ed{border-collapse:collapse;width:100%;min-width:520px;font-variant-numeric:tabular-nums}
 table.ed th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:6px 6px;border-bottom:1px solid var(--line)}
 table.ed td{padding:5px 6px;border-bottom:1px solid var(--line)}
-table.ed td.num input{text-align:right;max-width:110px}
+table.ed td.num input{text-align:right;width:100%;max-width:none}
+table.ed th:not(:first-child):not(:last-child),table.ed td.num,table.ed td.tot{width:120px}
+table.ed th:last-child{width:40px}
+table.ed th:not(:first-child):not(:last-child){padding-right:16px}
+table.ed tfoot td:last-child{padding-right:6px}
+table.ed tfoot td{padding-right:16px}
+table.ed td.tot{padding-right:16px}
 table.ed td.tot{text-align:right;font-family:var(--mono);font-size:13px;color:var(--muted);white-space:nowrap}
 table.ed tfoot td{font-weight:600;font-family:var(--mono);text-align:right;border-bottom:0;padding-top:8px}
 table.ed tfoot td:first-child{text-align:left;font-family:var(--body)}
