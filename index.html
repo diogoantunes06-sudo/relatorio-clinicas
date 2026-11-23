@@ -1377,7 +1377,16 @@ const DRIVE_URL="https://ussbr-my.sharepoint.com/:f:/g/personal/assessoria_dirge
 if(DRIVE_URL){$("drive-wrap").hidden=false;$("drive-link").href=DRIVE_URL;$("drive-url").textContent=DRIVE_URL;}
 function nomeArquivo(){
   const m=state.meta, slug=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"");
-  return ["Relatorio_Quantitativo",slug(clinicaNome(m).split(" · ")[0]),slug((m.campus||"").replace("Campus ","")),(m.inicio||"").replaceAll("-",""),(m.fim||"").replaceAll("-","")].filter(Boolean).join("_")+".pdf";
+  const MES=["Janeiro","Fevereiro","Marco","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const ym=iso=>{if(!iso)return null;const [y,mm]=iso.split("-");return {y:+y,m:+mm-1};};
+  const a=ym(m.inicio), b=ym(m.fim)||a;
+  let periodo="";
+  if(a&&b){
+    if(a.y===b.y&&a.m===b.m) periodo=`${MES[a.m]}_${a.y}`;
+    else if(a.y===b.y) periodo=`${MES[a.m]}_a_${MES[b.m]}_${b.y}`;
+    else periodo=`${MES[a.m]}_${a.y}_a_${MES[b.m]}_${b.y}`;
+  }
+  return ["Relatorio_Quantitativo",slug(clinicaNome(m).split(" · ")[0]),slug((m.campus||"").replace("Campus ","")),periodo].filter(Boolean).join("_")+".pdf";
 }
 function baseNome(){return nomeArquivo().replace(/^Relatorio_Quantitativo/,"").replace(/\.pdf$/,"")}
 /* ZIP simples (sem compressão), suficiente para fotos */
