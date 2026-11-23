@@ -346,7 +346,7 @@ body.capturing .wrap{width:1180px;max-width:none}
       </div>
       <ol class="hint" style="margin:12px 0 0;padding-left:18px">
         <li>Clique em <b>Gerar relatório em PDF</b> e salve o arquivo. As fotos das ações de extensão vão anexadas dentro do PDF. Se quiser também uma cópia separada, use <b>Baixar fotos (ZIP)</b>.</li>
-        <li>Envie o PDF para a pasta RELATÓRIOS CLÍNICAS ESCOLA<span id="drive-wrap" hidden>: <a id="drive-link" href="#" target="_blank" rel="noopener">enviar o PDF</a> <span class="sel" id="drive-url"></span></span>.</li>
+        <li>Envie o PDF para a pasta <span id="pasta-nome">RELATÓRIOS CLÍNICAS ESCOLA</span><span id="drive-wrap" hidden>: <a id="drive-link" href="#" target="_blank" rel="noopener">enviar o PDF</a> <span class="sel" id="drive-url"></span></span>.</li>
         <li>Clique em <b>Enviar à Direção Geral</b> para registrar os números no painel consolidado.</li>
       </ol>
       <div id="envio-msg" style="margin-top:12px" hidden></div>
@@ -1039,7 +1039,7 @@ function renderHeader(){
   $("h-eyebrow").textContent="Universidade de Vassouras"+(m.campus?" · "+m.campus:"");
   $("h-title").textContent=clinicaNome(m)||"Relatório Quantitativo de Atendimentos";
   $("h-periodo").textContent=m.inicio&&m.fim?`${dCurta(m.inicio)} a ${dCurta(m.fim)} ${m.fim.slice(0,4)}`:"Informe o período";
-  aplicarRotulos();
+  aplicarRotulos(); syncDrive();
   $("h-semanas").textContent=n(m.semanas)?`${n(m.semanas)} semanas letivas`:"";
 }
 
@@ -1373,8 +1373,16 @@ async function startEnviados(){
 }
 
 /* ---------- PDF ---------- */
-const DRIVE_URL="https://ussbr-my.sharepoint.com/:f:/g/personal/assessoria_dirgeral_univassouras_edu_br/IgBntmL8VZtlTrCCebFpUyKtAZuz2z7pLp7EpiumHXf0Gvo"; // pasta do Drive para armazenamento dos relatórios
-if(DRIVE_URL){$("drive-wrap").hidden=false;$("drive-link").href=DRIVE_URL;$("drive-url").textContent=DRIVE_URL;}
+const DRIVE_URL="https://ussbr-my.sharepoint.com/:f:/g/personal/assessoria_dirgeral_univassouras_edu_br/IgBntmL8VZtlTrCCebFpUyKtAZuz2z7pLp7EpiumHXf0Gvo"; // pasta geral (reserva)
+const DRIVE_CAMPUS={
+  "Campus Maricá":"https://ussbr-my.sharepoint.com/:f:/g/personal/assessoria_dirgeral_univassouras_edu_br/IgD1FUGcLWSxSYMT81HYVX--Ad0Sh7zPS69AXYaJjSqEKvo",
+  "Campus Saquarema":"https://ussbr-my.sharepoint.com/:f:/g/personal/assessoria_dirgeral_univassouras_edu_br/IgDjglovmEK-QJVPiQ1crUvtAQVq8FlPzZJ9CS2NuuJaJoY"
+};
+function linkEnvio(){ return DRIVE_CAMPUS[state.meta.campus]||DRIVE_URL; }
+function pastaEnvio(){ const c=state.meta.campus; return DRIVE_CAMPUS[c]?`RELATÓRIOS CLÍNICAS ESCOLA › ${c.replace("Campus ","")}`:"RELATÓRIOS CLÍNICAS ESCOLA"; }
+function syncDrive(){ const u=linkEnvio(); $("drive-wrap").hidden=!u; $("drive-link").href=u; $("drive-url").textContent=""; const pn=$("pasta-nome"); if(pn) pn.textContent=pastaEnvio(); }
+syncDrive();
+document.addEventListener("change",e=>{ if(e.target.id==="m-campus") syncDrive(); });
 function nomeArquivo(){
   const m=state.meta, slug=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"");
   const MES=["Janeiro","Fevereiro","Marco","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -1740,8 +1748,8 @@ async function gerarPDF(btn){
     }
     await baixar(blob,nomeArquivo());
     if(falhas.length){ say("PDF gerado, mas estes documentos não puderam ser incluídos (podem estar protegidos por senha ou corrompidos): "+falhas.map(esc).join("; ")+". Envie-os separadamente na pasta.","alerta"); return; }
-    if(totalFotos()){ say(`PDF gerado, com ${totalFotos()} ${totalFotos()===1?"foto anexada":"fotos anexadas"} ao arquivo`+(reduzidas?" (em tamanho reduzido, porque as originais passavam de 60 MB)":" em resolução original")+`. Envie o PDF para a pasta RELATÓRIOS CLÍNICAS ESCOLA`+(DRIVE_URL?` (<a href="${esc(DRIVE_URL)}" target="_blank" rel="noopener">enviar o PDF</a>)`:"")+".","ok"); return; }
-    say("PDF gerado. Agora envie o arquivo para a pasta RELATÓRIOS CLÍNICAS ESCOLA"+(DRIVE_URL?` (<a href="${esc(DRIVE_URL)}" target="_blank" rel="noopener">enviar o PDF</a>)`:"")+".","ok");
+    if(totalFotos()){ say(`PDF gerado, com ${totalFotos()} ${totalFotos()===1?"foto anexada":"fotos anexadas"} ao arquivo`+(reduzidas?" (em tamanho reduzido, porque as originais passavam de 60 MB)":" em resolução original")+`. Envie o PDF para a pasta ${pastaEnvio()}`+(linkEnvio()?` (<a href="${esc(linkEnvio())}" target="_blank" rel="noopener">enviar o PDF</a>)`:"")+".","ok"); return; }
+    say("PDF gerado. Agora envie o arquivo para a pasta "+pastaEnvio()+(linkEnvio()?` (<a href="${esc(linkEnvio())}" target="_blank" rel="noopener">enviar o PDF</a>)`:"")+".","ok");
   }catch(e){
     const c=e&&e.code;
     if(c==="declined") say("Download cancelado.","alerta");
