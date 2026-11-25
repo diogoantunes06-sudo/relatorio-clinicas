@@ -164,6 +164,9 @@ body.capturing .wrap{width:1180px;max-width:none}
 .login-erro{color:var(--can);font-size:13px;margin:0}
 .sair{appearance:none;border:1px solid rgba(255,255,255,.35);background:none;color:var(--on-wine);font:inherit;font-size:12px;border-radius:4px;padding:4px 10px;cursor:pointer;margin-top:8px}
 .sair:hover{background:rgba(255,255,255,.12)}
+#espec-campos .f{display:flex;flex-direction:column;gap:4px}
+#espec-campos .f input{margin-top:auto}
+.ex{font-size:11px;font-weight:400;color:var(--muted);opacity:.85;margin-top:-2px}
 @media (prefers-reduced-motion:no-preference){.track span{transition:width .3s ease}}
 </style>
 
@@ -904,7 +907,7 @@ function rot(m){
   const r={pac:"Pacientes únicos",pacSub:"cadastros distintos",pacForm:"Pacientes únicos (cadastros distintos)",serv:"Disciplina ou serviço",servTitulo:"Atendimentos por disciplina ou serviço",servDesc:"Volume de agendamentos por componente curricular ou serviço",servAdd:"+ Adicionar disciplina ou serviço"};
   if(nome.includes("veterin")) Object.assign(r,{pac:"Animais atendidos",pacSub:"pacientes distintos",pacForm:"Animais atendidos (pacientes distintos)"});
   if(nome.includes("enfermagem")) Object.assign(r,{serv:"Procedimento",servTitulo:"Atendimentos por procedimento",servDesc:"Volume de atendimentos por tipo de procedimento",servAdd:"+ Adicionar procedimento"});
-  r.nucleo=/^(nae|napp|nai|naff|nupps) ·/.test(nome);
+  r.nucleo=/^(nae|napp|nai|naf|nupps|npj) ·/.test(nome);
   r.sub="Relatório de acompanhamento de atendimentos clínicos"; r.turma="Turma / período"; r.novos="Novos pacientes"; r.novosForm="Novos pacientes no período";
   if(r.nucleo) Object.assign(r,{pac:"Pessoas atendidas",pacSub:"pessoas distintas",pacForm:"Pessoas atendidas (pessoas distintas)",serv:"Motivo da procura",servTitulo:"Atendimentos por motivo da procura",servDesc:"Volume de atendimentos por motivo da procura",servAdd:"+ Adicionar motivo",sub:"Relatório de acompanhamento de atendimentos do núcleo",turma:"Curso / período",novos:"Novos atendidos",novosForm:"Novos atendidos no período"});
   return r;
@@ -934,6 +937,7 @@ function aplicarRotulos(){
   const r=rot(state.meta);
   document.querySelectorAll("[data-tx]").forEach(el=>{const v=tx(el.dataset.tx); if(el.innerHTML!==v) el.innerHTML=v;});
   $("wrap-publico").hidden=!r.nucleo; $("aviso-sigilo").hidden=!r.nucleo;
+  $("aviso-sigilo").textContent=siglaDe(state.meta)==="NPJ"?"Relatório do NPJ: informe apenas números agregados. Não inclua nomes das partes, números de processo nem detalhes dos casos, em respeito ao sigilo profissional.":"Relatório de núcleo: informe apenas números agregados. Não inclua nomes, matrículas, laudos ou detalhes de casos das pessoas atendidas.";
   renderEspec();
   const sg=siglaDe(state.meta), dEl=document.querySelector('[data-tx="dDesc"]');
   if(sg&&dEl) dEl.textContent=`Total de atendimentos por motivo da procura (ex.: ${ESPEC[sg].motivos}).`;
@@ -1010,12 +1014,13 @@ document.addEventListener("change",e=>{
   }
 });
 const UNIDADES={
-  "Campus Maricá":{clinicas:["Clínica Escola de Fisioterapia","Clínica Escola de Nutrição","Consultório de Enfermagem","Clínica Veterinária de Medicina Veterinária","Serviço Escola de Psicologia (SEP)"]},
+  "Campus Maricá":{clinicas:["Clínica Escola de Fisioterapia","Clínica Escola de Nutrição","Consultório de Enfermagem","Clínica Veterinária de Medicina Veterinária","SEP · Serviço Escola de Psicologia"]},
   "Campus Saquarema":{clinicas:["Clínica Odontológica","Clínica Escola de Fisioterapia","Clínica Escola de Nutrição","Clínica Escola de Medicina Veterinária","Consultório de Enfermagem"]}
 };
-const NUCLEOS=["NAE · Núcleo de Acompanhamento do Estudante","NAPP · Núcleo de Apoio Psicopedagógico ao Aluno","NAI · Núcleo de Acessibilidade e Inclusão","NAFF · Núcleo de Atendimento e Apoio Fiscal","NUPPS · Núcleo de Prática em Serviço Social"];
+const NUCLEOS=["NAE · Núcleo de Acompanhamento do Estudante","NAPP · Núcleo de Apoio Psicopedagógico ao Aluno","NAI · Núcleo de Acessibilidade e Inclusão","NAF · Núcleo de Apoio Fiscal","NUPPS · Núcleo de Prática em Serviço Social"];
+const NUCLEOS_CAMPUS={"Campus Maricá":NUCLEOS.concat(["NPJ · Núcleo de Prática Jurídica"]),"Campus Saquarema":NUCLEOS};
 const ROTULO_OPCAO={"Clínica Escola de Medicina Veterinária":"Clínica Escola de Medicina Veterinária (em construção)"};
-function unidadesDo(c){const u=UNIDADES[c]; return u?{clinicas:u.clinicas,nucleos:NUCLEOS}:{clinicas:[],nucleos:[]};}
+function unidadesDo(c){const u=UNIDADES[c]; return u?{clinicas:u.clinicas,nucleos:NUCLEOS_CAMPUS[c]}:{clinicas:[],nucleos:[]};}
 function syncClinicaSelect(){
   const sel=$("m-clinica"), m=state.meta, u=unidadesDo(m.campus);
   if(!UNIDADES[m.campus]){ sel.innerHTML='<option value="">Escolha o campus primeiro</option>'; sel.disabled=true; return; }
@@ -1177,16 +1182,45 @@ function kpisAcomp(m){
   return [["novos",rot(m).novos],["retornos","Retornos"],["espera","Lista de espera"],["encam","Encaminhamentos"]].filter(([f])=>m[f]!==""&&m[f]!=null&&!isNaN(Number(m[f]))).map(([f,l])=>[fmt(n(m[f])),l]);
 }
 const ESPEC={
-  NAE:{campos:[["risco","Alunos em risco de evasão identificados"],["contatos","Alunos contatados por faltas ou baixo rendimento"],["abonos","Abonos de falta lançados"],["regularizados","Alunos que regularizaram a frequência"]],
-       motivos:"excesso de faltas, pedido de abono, baixo rendimento, intenção de trancar ou desistir, dificuldade de adaptação"},
-  NAPP:{campos:[["individuais","Atendimentos psicopedagógicos individuais"],["grupo","Atendimentos em grupo"],["nivelamento","Alunos no Programa de Nivelamento"],["sep","Encaminhamentos ao SEP"]],
-       motivos:"dificuldade de aprendizagem, ansiedade em provas, organização dos estudos, sofrimento emocional, orientação a docentes"},
-  NAI:{campos:[["acompanhados","Estudantes com deficiência ou necessidades específicas acompanhados"],["adaptacoes","Adaptações providenciadas (provas, materiais, ledor, intérprete)"],["planos","Planos de acompanhamento individual ativos"],["fisica","Demandas de acessibilidade física registradas"]],
-       motivos:"adaptação de prova, apoio de ledor ou intérprete de Libras, material acessível, orientação a docentes, acessibilidade física"},
-  NAFF:{campos:[["ir","Declarações de imposto de renda orientadas"],["mei","Orientações a MEI e pequenos negócios"],["cpf","Regularizações de CPF e cadastros"],["estagiarios","Estagiários atuando no núcleo"]],
-       motivos:"declaração de imposto de renda, CPF irregular, abertura ou baixa de MEI, emissão de certidões, dúvidas sobre tributos"},
-  NUPPS:{campos:[["familias","Famílias ou pessoas da comunidade atendidas"],["beneficios","Orientações sobre benefícios (CadÚnico, BPC e outros)"],["rede","Encaminhamentos à rede socioassistencial (CRAS, CREAS)"],["estudos","Visitas ou estudos sociais realizados"]],
-       motivos:"acesso a benefícios sociais, CadÚnico, vulnerabilidade social, orientação sobre direitos, encaminhamento à rede de proteção"}
+  NAE:{campos:[
+    ["risco","Alunos em risco de evasão identificados","ex.: alunos com muitas faltas ou reprovados em várias disciplinas"],
+    ["contatos","Alunos contatados por faltas ou baixo rendimento","ex.: ligações, e-mails ou mensagens feitas a alunos faltosos"],
+    ["abonos","Abonos de falta lançados","ex.: faltas abonadas com atestado ou outro documento válido"],
+    ["regularizados","Alunos que regularizaram a frequência","ex.: alunos contatados que voltaram a frequentar as aulas"]],
+   motivos:"excesso de faltas, pedido de abono, baixo rendimento, intenção de trancar ou desistir, dificuldade de adaptação"},
+  NAPP:{campos:[
+    ["individuais","Atendimentos psicopedagógicos individuais","ex.: cada sessão de atendimento com um aluno"],
+    ["grupo","Atendimentos em grupo","ex.: oficinas de organização dos estudos, rodas de conversa"],
+    ["nivelamento","Alunos no Programa de Nivelamento","ex.: inscritos em Português, Matemática e Estatística ou Informática"],
+    ["sep","Encaminhamentos ao SEP","ex.: alunos encaminhados ao Serviço Escola de Psicologia"]],
+   motivos:"dificuldade de aprendizagem, ansiedade em provas, organização dos estudos, sofrimento emocional, orientação a docentes"},
+  NAI:{campos:[
+    ["acompanhados","Estudantes com deficiência ou necessidades específicas acompanhados","ex.: estudantes com acompanhamento ativo do núcleo no mês"],
+    ["adaptacoes","Adaptações providenciadas (provas, materiais, ledor, intérprete)","ex.: prova ampliada, tempo adicional, ledor, intérprete de Libras"],
+    ["planos","Planos de acompanhamento individual ativos","ex.: planos com adaptações combinadas com a coordenação do curso"],
+    ["fisica","Demandas de acessibilidade física registradas","ex.: pedidos de rampa, mesa adaptada, sinalização ou vaga"]],
+   motivos:"adaptação de prova, apoio de ledor ou intérprete de Libras, material acessível, orientação a docentes, acessibilidade física"},
+  NAF:{campos:[
+    ["ir","Declarações de imposto de renda orientadas","ex.: pessoas orientadas ou ajudadas a fazer a declaração de IR"],
+    ["mei","Orientações a MEI e pequenos negócios","ex.: abertura, baixa ou regularização de MEI"],
+    ["cpf","Regularizações de CPF e cadastros","ex.: CPF suspenso, pendente ou com dados desatualizados"],
+    ["estagiarios","Estagiários atuando no núcleo","ex.: alunos que fizeram atendimentos no núcleo no mês"]],
+   motivos:"declaração de imposto de renda, CPF irregular, abertura ou baixa de MEI, emissão de certidões, dúvidas sobre tributos"},
+  NUPPS:{campos:[
+    ["familias","Famílias ou pessoas da comunidade atendidas","ex.: famílias ou pessoas atendidas pelo serviço social no mês"],
+    ["beneficios","Orientações sobre benefícios (CadÚnico, BPC e outros)","ex.: orientação para cadastro ou acesso a CadÚnico, BPC, Bolsa Família"],
+    ["rede","Encaminhamentos à rede socioassistencial (CRAS, CREAS)","ex.: encaminhamentos a CRAS, CREAS ou Conselho Tutelar"],
+    ["estudos","Visitas ou estudos sociais realizados","ex.: visitas domiciliares ou estudos socioeconômicos"]],
+   motivos:"acesso a benefícios sociais, CadÚnico, vulnerabilidade social, orientação sobre direitos, encaminhamento à rede de proteção"},
+  NPJ:{campos:[
+    ["acoes","Ações ajuizadas","ex.: petições iniciais protocoladas no mês (divórcio, alimentos, cobrança)"],
+    ["audiencias","Audiências realizadas ou acompanhadas","ex.: audiências de conciliação, de instrução e julgamento"],
+    ["mediacoes","Sessões de mediação e conciliação","ex.: sessões feitas no próprio NPJ ou no CEJUSC"],
+    ["acordos","Acordos obtidos","ex.: sessões ou audiências que terminaram em acordo"],
+    ["acervo","Processos ativos em acompanhamento","ex.: total de processos em andamento no último dia do mês"],
+    ["orientacoes","Atendimentos só de orientação (sem ajuizamento)","ex.: a pessoa foi orientada e não foi preciso entrar com ação"],
+    ["estagiarios","Alunos estagiários atuando","ex.: alunos da prática jurídica que atenderam no núcleo no mês"]],
+   motivos:"família (divórcio, alimentos, guarda), consumidor, previdenciário, trabalhista, sucessões e inventário, regularização de documentos"}
 };
 function siglaDe(m){const sg=(clinicaNome(m)||"").split(" · ")[0]; return ESPEC[sg]?sg:"";}
 function renderEspec(){
@@ -1196,7 +1230,7 @@ function renderEspec(){
   box.dataset.sg=sg;
   if(!state.meta.espec||typeof state.meta.espec!=="object") state.meta.espec={};
   $("espec-tit").textContent="Indicadores específicos do "+sg;
-  $("espec-campos").innerHTML=ESPEC[sg].campos.map(([k,l])=>`<label class="f">${esc(l)} <input id="es-${sg}-${k}" data-es="${k}" type="number" min="0" inputmode="numeric" value="${esc(state.meta.espec[k]??"")}"></label>`).join("");
+  $("espec-campos").innerHTML=ESPEC[sg].campos.map(([k,l,ex])=>`<label class="f">${esc(l)}${ex?`<span class="ex">${esc(ex)}</span>`:""} <input id="es-${sg}-${k}" data-es="${k}" type="number" min="0" inputmode="numeric" value="${esc(state.meta.espec[k]??"")}"></label>`).join("");
 }
 function kpisEspec(m){
   const sg=siglaDe(m); if(!sg) return [];
@@ -1539,10 +1573,11 @@ function montarPDF(){
   // Indicadores de acompanhamento
   let y=ky+kh+5;
   let y2=ky+kh+2;
-  const tira=(lista,rotulo)=>{
+  const tira=(lista,rotulo,semTexto)=>{
     if(!lista.length) return;
+    if(lista.length>4){ const meio=Math.ceil(lista.length/2); tira(lista.slice(0,meio),rotulo); tira(lista.slice(meio),rotulo,true); return; }
     let x0=M, wTot=CW;
-    if(rotulo){ font(7,"bold"); ink(C.muted); const lw=pdf.getTextWidth(rotulo)+6; T_(rotulo,M,y2+7); x0=M+lw; wTot=CW-lw; }
+    if(rotulo){ font(7,"bold"); ink(C.muted); const lw=pdf.getTextWidth(rotulo)+6; if(!semTexto) T_(rotulo,M,y2+7); x0=M+lw; wTot=CW-lw; }
     const w2=wTot/lista.length;
     const linhas=lista.map(([v,l])=>{font(13,"bold"); const vw=pdf.getTextWidth(v); font(7.3,"bold"); return wrap(l,w2-vw-10).slice(0,3);});
     const maxL=Math.max(1,...linhas.map(x=>x.length)), h2=maxL>2?14:11;
