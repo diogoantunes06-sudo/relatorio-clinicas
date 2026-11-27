@@ -161,7 +161,7 @@ body.capturing .wrap{width:1180px;max-width:none}
 .login-body .btn{width:100%;padding:10px 14px}
 .lembrar{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
 .lembrar input{width:auto}
-.login-erro{color:var(--can);font-size:13px;margin:0}
+.login-erro{background:var(--warn-bg);color:var(--can);border-left:3px solid var(--can);font-size:13px;font-weight:600;margin:0;padding:8px 10px;border-radius:4px}
 .sair{appearance:none;border:1px solid rgba(255,255,255,.35);background:none;color:var(--on-wine);font:inherit;font-size:12px;border-radius:4px;padding:4px 10px;cursor:pointer;margin-top:8px}
 .sair:hover{background:rgba(255,255,255,.12)}
 #espec-campos .f{display:flex;flex-direction:column;gap:4px}
@@ -183,6 +183,7 @@ body.capturing .wrap{width:1180px;max-width:none}
       <label class="lembrar"><input id="lg-lembrar" type="checkbox"> Manter conectado neste computador</label>
       <p class="login-erro" id="lg-erro" hidden>Usuário ou senha incorretos. Confira e tente de novo.</p>
       <button class="btn primary" type="submit">Entrar</button>
+      <p class="hint" style="margin:0;text-align:center">Versão 27/11/2026</p>
     </div>
   </form>
 </div>
@@ -202,6 +203,7 @@ body.capturing .wrap{width:1180px;max-width:none}
     </div>
   </header>
 
+  <p class="hint" style="margin:-8px 0 0;text-align:right">Versão 27/11/2026 · em caso de dúvida, informe a versão ao suporte</p>
   <nav class="tabs" role="tablist" aria-label="Seções">
     <button class="tab" role="tab" id="tab-preencher" data-v="preencher" aria-selected="true">1. Preencher</button>
     <button class="tab" role="tab" id="tab-painel" data-v="painel" aria-selected="false">2. Painel gerado</button>
@@ -210,19 +212,29 @@ body.capturing .wrap{width:1180px;max-width:none}
 
   <!-- PREENCHER -->
   <section id="v-preencher" class="wrap" style="padding:0;max-width:none">
-    <div id="exemplo-aviso" class="alerta" hidden>Este formulário abre com um <b>exemplo</b> (dados do relatório da Clínica de Odontologia, 10/09 a 14/10/2026) para mostrar como o painel fica. Clique em <b>Limpar e começar</b> para preencher os dados da sua clínica.</div>
+    <div id="exemplo-aviso" class="alerta" hidden>Este formulário abre com um <b>exemplo</b> (baseado no relatório da Clínica de Odontologia de out/2026) para mostrar como o painel fica. Clique em <b>Limpar e começar</b> para preencher os dados da sua clínica.</div>
     <div class="bar-actions">
       <span class="hint" id="rascunho-status">O preenchimento fica salvo neste navegador até o envio.</span>
       <div class="row-actions" style="margin:0">
         <button class="btn" id="btn-limpar" type="button">Limpar e começar</button>
         <button class="btn" id="btn-exemplo" type="button">Carregar exemplo</button>
+        <button class="btn" id="btn-rasc-salvar" type="button">Salvar rascunho em arquivo</button>
+        <label class="btn" for="rasc-file">Abrir rascunho</label>
+        <input id="rasc-file" type="file" accept=".json,application/json" hidden>
       </div>
     </div>
+    <div id="rasc-msg" hidden></div>
 
     <div class="card">
       <div class="step"><span class="n">A</span><h2>Identificação</h2></div>
       <p class="desc">Dados da clínica, do período e de quem responde pelo relatório.</p>
       <div class="fields">
+        <label class="f">Tipo de relatório
+          <select id="m-tipo">
+            <option value="mensal">Mensal</option>
+            <option value="anual">Anual</option>
+          </select>
+        </label>
         <label class="f">Campus
           <select id="m-campus">
             <option value="">Selecione</option>
@@ -239,9 +251,11 @@ body.capturing .wrap{width:1180px;max-width:none}
         <label class="f" id="wrap-outra" hidden>Nome da unidade
           <input id="m-outra" type="text" placeholder="Ex.: Clínica de Psicologia">
         </label>
-        <label class="f">Início do período <input id="m-inicio" type="date"></label>
-        <label class="f">Fim do período <input id="m-fim" type="date"></label>
-        <label class="f">Semanas letivas <input id="m-semanas" type="number" min="0" inputmode="numeric"></label>
+        <label class="f" id="wrap-ano" hidden>Ano de referência <input id="m-ano" type="number" min="2020" max="2100" inputmode="numeric"></label>
+        <label class="f" id="wrap-mes">Mês de referência <select id="m-mesref"></select></label>
+        <label class="f" id="wrap-inicio" hidden>Início do período <input id="m-inicio" type="date"></label>
+        <label class="f" id="wrap-fim" hidden>Fim do período <input id="m-fim" type="date"></label>
+        <label class="f" id="wrap-semanas">Semanas letivas <input id="m-semanas" type="number" min="0" inputmode="numeric"></label>
         <label class="f">Responsável pelo preenchimento <input id="m-resp" type="text" placeholder="Nome completo"></label>
         <label class="f">Cargo / função <input id="m-cargo" type="text" placeholder="Ex.: Coordenador(a) da clínica"></label>
         <label class="f">Matrícula <input id="m-matr" type="text" inputmode="numeric"></label>
@@ -252,7 +266,7 @@ body.capturing .wrap{width:1180px;max-width:none}
       <div class="step"><span class="n">B</span><h2 data-tx="bTit">Agendamentos por semana</h2></div>
       <p class="desc" data-tx="bDesc">Uma linha por semana letiva. <b>Finalizado</b>: consulta do dia concluída com o paciente presente. <b>Falta</b>: ausência sem desmarcação. <b>Cancelado</b>: desmarcação prévia. <b>Sem agendamento</b>: atendimento por demanda espontânea, sem marcação prévia (ex.: aferição de pressão, curativo, urgência).</p>
       <div class="tbl-wrap"><table class="ed" id="t-semanas"></table></div>
-      <div class="row-actions"><button class="btn" type="button" data-add="semanas">+ Adicionar semana</button></div>
+      <div class="row-actions"><button class="btn" type="button" data-add="semanas" id="btn-add-sem">+ Adicionar semana</button></div>
     </div>
 
     <div class="card">
@@ -324,6 +338,7 @@ body.capturing .wrap{width:1180px;max-width:none}
       <div class="step"><span class="n">H</span><h2>Observações e fonte dos dados</h2></div>
       <p class="desc">Ocorrências relevantes do período e de onde os números foram extraídos (sistema, planilha de agendamento etc.).</p>
       <div class="fields">
+        <label class="f" id="wrap-destano" hidden style="grid-column:1/-1">Destaques do ano <span class="ex">Principais realizações, mudanças, dificuldades e prioridades para o próximo ano.</span><textarea id="m-destano" placeholder="Ex.: ampliação do horário de atendimento no 2º semestre; parceria com a Secretaria de Saúde; demanda reprimida em ortodontia."></textarea></label>
         <label class="f" style="grid-column:1/-1">Observações <textarea id="m-obs"></textarea></label>
         <label class="f" style="grid-column:1/-1">Fonte dos dados <input id="m-fonte" type="text" placeholder="Ex.: planilhas de agendamento do sistema de gestão da clínica"></label>
       </div>
@@ -374,7 +389,7 @@ body.capturing .wrap{width:1180px;max-width:none}
     <div class="grid2">
       <div class="card">
         <h2 data-tx="pSem">Volume semanal de agendamentos, por situação</h2>
-        <p class="desc">Total por semana letiva, segmentado por situação do atendimento</p>
+        <p class="desc" id="p-sem-desc">Total por semana letiva, segmentado por situação do atendimento</p>
         <div id="p-semanal"></div>
         <div class="legend" id="leg-semanal"></div>
         <div class="leitura" id="l-semanal"></div>
@@ -409,6 +424,10 @@ body.capturing .wrap{width:1180px;max-width:none}
       <h2>Ações de extensão e evidências</h2>
       <p class="desc" id="p-acoes-resumo"></p>
       <div id="p-acoes"></div>
+    </div>
+    <div class="card" id="card-destano" hidden>
+      <h2>Destaques do ano</h2>
+      <p class="obs" id="p-destano"></p>
     </div>
     <div class="card" id="card-obs">
       <h2>Observações</h2>
@@ -850,7 +869,7 @@ const LS_KEY="painel-clinicas-rascunho-v1";
 
 const EXEMPLO={
   exemplo:true,
-  meta:{clinica:"Clínica Odontológica",outra:"",campus:"Campus Saquarema",inicio:"2026-09-10",fim:"2026-10-14",semanas:6,resp:"Responsável de exemplo",cargo:"Coordenação da clínica",matr:"",pacientes:996,obs:"Exemplo montado com os números do relatório da Odontologia. A última semana (13/10 a 14/10) é parcial.",fonte:"Planilhas de agendamento por período (5º ao 8º) do sistema de gestão da clínica-escola"},
+  meta:{clinica:"Clínica Odontológica",outra:"",campus:"Campus Saquarema",inicio:"2026-10-01",fim:"2026-10-31",mesRef:"2026-10",semanas:6,resp:"Responsável de exemplo",cargo:"Coordenação da clínica",matr:"",pacientes:996,obs:"Exemplo montado com os números do relatório da Odontologia. A última semana (13/10 a 14/10) é parcial.",fonte:"Planilhas de agendamento por período (5º ao 8º) do sistema de gestão da clínica-escola"},
   semanas:[
     {label:"10/09 a 11/09",fin:null,fal:null,can:null,total:191},
     {label:"14/09 a 18/09",total:305},{label:"21/09 a 25/09",total:216},
@@ -871,7 +890,7 @@ const EXEMPLO={
 })();
 
 function vazio(){
-  return {exemplo:false,meta:{clinica:"",outra:"",campus:"",inicio:"",fim:"",semanas:"",resp:"",cargo:"",matr:"",pacientes:"",novos:"",retornos:"",espera:"",encam:"",pubAlunos:"",pubDocentes:"",pubTecnicos:"",pubExternos:"",acomp:"",obs:"",fonte:""},
+  return {exemplo:false,meta:{clinica:"",outra:"",campus:"",inicio:"",fim:"",semanas:"",resp:"",cargo:"",matr:"",pacientes:"",novos:"",retornos:"",espera:"",encam:"",pubAlunos:"",pubDocentes:"",pubTecnicos:"",pubExternos:"",acomp:"",tipo:"mensal",ano:"",mesRef:"",destAno:"",obs:"",fonte:""},
     semanas:[{label:"",fin:"",fal:"",can:""}],turmas:[{label:"",fin:"",fal:"",can:""}],servicos:[{label:"",total:""}],
     destaques:[{titulo:"",valor:"",nota:""},{titulo:"",valor:"",nota:""}],ranking:[],acoes:[]};
 }
@@ -892,7 +911,7 @@ const dCurta=iso=>{if(!iso)return"";const [y,m,d]=iso.split("-");return `${+d} $
 function save(){ if(viewingSent) return; try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){} }
 
 /* ---------- Formulário ---------- */
-const META_IDS={clinica:"m-clinica",outra:"m-outra",campus:"m-campus",inicio:"m-inicio",fim:"m-fim",semanas:"m-semanas",resp:"m-resp",cargo:"m-cargo",matr:"m-matr",pacientes:"m-pacientes",novos:"m-novos",retornos:"m-retornos",espera:"m-espera",encam:"m-encam",pubAlunos:"m-pub-alunos",pubDocentes:"m-pub-docentes",pubTecnicos:"m-pub-tecnicos",pubExternos:"m-pub-externos",acomp:"m-acomp",obs:"m-obs",fonte:"m-fonte"};
+const META_IDS={clinica:"m-clinica",outra:"m-outra",campus:"m-campus",inicio:"m-inicio",fim:"m-fim",semanas:"m-semanas",resp:"m-resp",cargo:"m-cargo",matr:"m-matr",pacientes:"m-pacientes",novos:"m-novos",retornos:"m-retornos",espera:"m-espera",encam:"m-encam",pubAlunos:"m-pub-alunos",pubDocentes:"m-pub-docentes",pubTecnicos:"m-pub-tecnicos",pubExternos:"m-pub-externos",acomp:"m-acomp",ano:"m-ano",mesRef:"m-mesref",destAno:"m-destano",obs:"m-obs",fonte:"m-fonte"};
 const TABLES={
   semanas:{cols:[["label","Semana (ex.: 10/09 a 14/09)","text"],["fin","Finalizado","num"],["fal","Falta","num"],["can","Cancelado","num"],["esp","Sem agendamento","num"]],total:true},
   turmas:{cols:[["label","Turma / período","text"],["fin","Finalizado","num"],["fal","Falta","num"],["can","Cancelado","num"],["esp","Sem agendamento","num"]],total:true},
@@ -908,8 +927,8 @@ function rot(m){
   if(nome.includes("veterin")) Object.assign(r,{pac:"Animais atendidos",pacSub:"pacientes distintos",pacForm:"Animais atendidos (pacientes distintos)"});
   if(nome.includes("enfermagem")) Object.assign(r,{serv:"Procedimento",servTitulo:"Atendimentos por procedimento",servDesc:"Volume de atendimentos por tipo de procedimento",servAdd:"+ Adicionar procedimento"});
   r.nucleo=/^(nae|napp|nai|naf|nupps|npj) ·/.test(nome);
-  r.sub="Relatório de acompanhamento de atendimentos clínicos"; r.turma="Turma / período"; r.novos="Novos pacientes"; r.novosForm="Novos pacientes no período";
-  if(r.nucleo) Object.assign(r,{pac:"Pessoas atendidas",pacSub:"pessoas distintas",pacForm:"Pessoas atendidas (pessoas distintas)",serv:"Motivo da procura",servTitulo:"Atendimentos por motivo da procura",servDesc:"Volume de atendimentos por motivo da procura",servAdd:"+ Adicionar motivo",sub:"Relatório de acompanhamento de atendimentos do núcleo",turma:"Curso / período",novos:"Novos atendidos",novosForm:"Novos atendidos no período"});
+  r.sub=anual()?"Relatório anual de atendimentos clínicos":"Relatório de acompanhamento de atendimentos clínicos"; r.turma="Turma / período"; r.novos="Novos pacientes"; r.novosForm="Novos pacientes no período";
+  if(r.nucleo) Object.assign(r,{pac:"Pessoas atendidas",pacSub:"pessoas distintas",pacForm:"Pessoas atendidas (pessoas distintas)",serv:"Motivo da procura",servTitulo:"Atendimentos por motivo da procura",servDesc:"Volume de atendimentos por motivo da procura",servAdd:"+ Adicionar motivo",sub:anual()?"Relatório anual de atendimentos do núcleo":"Relatório de acompanhamento de atendimentos do núcleo",turma:"Curso / período",novos:"Novos atendidos",novosForm:"Novos atendidos no período"});
   return r;
 }
 const TX={
@@ -930,11 +949,25 @@ const TX={
   fin:["Finalizado","Realizado"], fins:["Finalizados","Realizados"], esp:["Sem agendamento","Demanda espontânea"],
   turma:["turma","curso"]
 };
-function tx(k){const r=rot(state.meta), v=TX[k]; return r.nucleo&&v[1]!=null?v[1]:(v[0]!=null?v[0]:(TX0[k]||""));}
+const TXA={bTit:["Agendamentos por mês","Atendimentos por mês"],pSem:["Volume mensal de agendamentos, por situação","Volume mensal de atendimentos, por situação"]};
+const MESES_ANO=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const anual=()=>state.meta.tipo==="anual";
+function tx(k){
+  const r=rot(state.meta);
+  if(anual()&&TXA[k]){const v=TXA[k]; return r.nucleo?v[1]:v[0];}
+  if(anual()&&k==="bDesc"){const base=r.nucleo&&TX.bDesc[1]?TX.bDesc[1]:(TX0.bDesc||""); return base.replace("Uma linha por semana letiva.","Uma linha por mês do ano, com os totais de cada mês tirados dos registros da unidade (planilhas, sistema, livro de registro).");}
+  return txBase(k);
+}
+function txBase(k){const r=rot(state.meta), v=TX[k]; return r.nucleo&&v[1]!=null?v[1]:(v[0]!=null?v[0]:(TX0[k]||""));}
 const TX0={};
 document.querySelectorAll("[data-tx]").forEach(el=>{ if(!(el.dataset.tx in TX0)) TX0[el.dataset.tx]=el.innerHTML; });
 function aplicarRotulos(){
-  const r=rot(state.meta);
+  const r=rot(state.meta), an=anual();
+  $("wrap-ano").hidden=!an; $("wrap-mes").hidden=an; $("wrap-semanas").hidden=an;
+  $("wrap-destano").hidden=!an; $("btn-add-sem").hidden=an;
+  $("p-sem-desc").textContent=an?"Total por mês do ano, segmentado por situação do atendimento":"Total por semana letiva, segmentado por situação do atendimento";
+  const lab0=an?"Mês":"Semana (ex.: 10/09 a 14/09)";
+  if(TABLES.semanas.cols[0][1]!==lab0){TABLES.semanas.cols[0][1]=lab0; renderTable("semanas");}
   document.querySelectorAll("[data-tx]").forEach(el=>{const v=tx(el.dataset.tx); if(el.innerHTML!==v) el.innerHTML=v;});
   $("wrap-publico").hidden=!r.nucleo; $("aviso-sigilo").hidden=!r.nucleo;
   $("aviso-sigilo").textContent=siglaDe(state.meta)==="NPJ"?"Relatório do NPJ: informe apenas números agregados. Não inclua nomes das partes, números de processo nem detalhes dos casos, em respeito ao sigilo profissional.":"Relatório de núcleo: informe apenas números agregados. Não inclua nomes, matrículas, laudos ou detalhes de casos das pessoas atendidas.";
@@ -976,8 +1009,11 @@ function updateTotals(key){
 }
 
 function fillForm(){
+  popularMeses();
+  if(state.meta.tipo!=="anual"&&!state.meta.mesRef&&state.meta.inicio&&state.meta.fim&&state.meta.inicio.slice(0,7)===state.meta.fim.slice(0,7)) state.meta.mesRef=state.meta.inicio.slice(0,7);
   for(const [k,id] of Object.entries(META_IDS)) $(id).value=state.meta[k]??"";
   state.destaques.forEach((d,i)=>{$(`d${i}-titulo`).value=d.titulo??"";$(`d${i}-valor`).value=d.valor??"";$(`d${i}-nota`).value=d.nota??"";});
+  $("m-tipo").value=state.meta.tipo==="anual"?"anual":"mensal";
   syncClinicaSelect();
   Object.keys(TABLES).forEach(renderTable);
   if(!Array.isArray(state.acoes)) state.acoes=[];
@@ -991,6 +1027,8 @@ function fillForm(){
 document.addEventListener("input",e=>{
   const el=e.target;
   if(viewingSent) return;
+  if(el.id==="m-ano"){ state.meta.ano=el.value; datasDoAno(); }
+  if(el.id==="m-mesref"){ state.meta.mesRef=el.value; datasDoMes(); }
   if(el.dataset.es){ if(!state.meta.espec||typeof state.meta.espec!=="object") state.meta.espec={}; state.meta.espec[el.dataset.es]=el.value; save(); return; }
   if(el.dataset.k){const {k,i,f}=el.dataset; state[k][+i][f]=el.value; if(TABLES[k].total) updateTotals(k);}
   else{
@@ -1005,6 +1043,20 @@ document.addEventListener("change",e=>{
   if(e.target.id==="m-clinica"){
     state.meta.clinica=e.target.value;
     $("wrap-outra").hidden=state.meta.clinica!=="Outra";renderHeader();save();
+  }
+  if(e.target.id==="m-tipo"){
+    const novo=e.target.value; if(novo===(state.meta.tipo||"mensal")) return;
+    if(novo==="anual"){
+      state._sem=state.semanas;
+      state.semanas=(state._mes&&state._mes.length)?state._mes:MESES_ANO.map(l=>({label:l,fin:"",fal:"",can:"",esp:""}));
+      if(!state.meta.ano) state.meta.ano=String(new Date().getFullYear());
+      state.meta.tipo="anual"; datasDoAno();
+    }else{
+      state._mes=state.semanas;
+      state.semanas=(state._sem&&state._sem.length)?state._sem:[{label:"",fin:"",fal:"",can:"",esp:""}];
+      state.meta.tipo="mensal"; state.meta.inicio=""; state.meta.fim="";
+    }
+    state.exemplo=false; fillForm(); save(); return;
   }
   if(e.target.id==="m-campus"){
     state.meta.campus=e.target.value;
@@ -1038,20 +1090,25 @@ document.addEventListener("click",e=>{
   if(rm){const k=rm.dataset.rm; state[k].splice(+rm.dataset.i,1); renderTable(k); checkTurmas(); save();}
 });
 
+const MES_OPC=(()=>{const o=[];for(let y=2026;y<=2027;y++)for(let m=1;m<=12;m++)o.push(`${y}-${String(m).padStart(2,"0")}`);return o;})();
+function rotMes(v){if(!v)return"";const [y,m]=v.split("-");return `${MESES_ANO[+m-1]} de ${y}`;}
+function popularMeses(){const sel=$("m-mesref"); if(sel.options.length) return; sel.innerHTML='<option value="">Selecione o mês</option>'+MES_OPC.map(v=>`<option value="${v}">${rotMes(v)}</option>`).join("");}
+function datasDoMes(){const v=state.meta.mesRef; if(!/^\d{4}-\d{2}$/.test(v||""))return; const [y,m]=v.split("-").map(Number); const ult=new Date(y,m,0).getDate(); state.meta.inicio=`${v}-01`; state.meta.fim=`${v}-${String(ult).padStart(2,"0")}`;}
+function datasDoAno(){const a=String(state.meta.ano||"").trim(); if(/^\d{4}$/.test(a)){state.meta.inicio=a+"-01-01"; state.meta.fim=a+"-12-31";}}
 function totalsOf(rows){const S=k=>rows.reduce((a,r)=>a+n(r[k]),0),f=S("fin"),l=S("fal"),c=S("can"),e=S("esp");return {fin:f,fal:l,can:c,esp:e,ag:f+l+c,total:f+l+c+e}}
 function checkTurmas(){
   const a=totalsOf(state.semanas).total,b=totalsOf(state.turmas).total,box=$("check-turmas");
   if(!a&&!b){box.innerHTML="";return}
-  box.innerHTML=a===b?`<div class="ok">Total por ${tx("turma")} (${fmt(b)}) confere com o total semanal.</div>`:`<div class="alerta">O total por ${tx("turma")} (${fmt(b)}) está diferente do total semanal (${fmt(a)}). Confira antes de enviar.</div>`;
+  box.innerHTML=a===b?`<div class="ok">Total por ${tx("turma")} (${fmt(b)}) confere com o total ${anual()?"mensal":"semanal"}.</div>`:`<div class="alerta">O total por ${tx("turma")} (${fmt(b)}) está diferente do total ${anual()?"mensal":"semanal"} (${fmt(a)}). Confira antes de enviar.</div>`;
 }
 function clinicaNome(m){return m.clinica==="Outra"?(m.outra||"Clínica"):(m.clinica||"")}
 function renderHeader(){
   const m=state.meta;
   $("h-eyebrow").textContent="Universidade de Vassouras"+(m.campus?" · "+m.campus:"");
   $("h-title").textContent=clinicaNome(m)||"Relatório Quantitativo de Atendimentos";
-  $("h-periodo").textContent=m.inicio&&m.fim?`${dCurta(m.inicio)} a ${dCurta(m.fim)} ${m.fim.slice(0,4)}`:"Informe o período";
+  $("h-periodo").textContent=anual()?(m.ano?`Ano de ${m.ano}`:"Informe o ano"):m.mesRef?rotMes(m.mesRef):m.inicio&&m.fim?`${dCurta(m.inicio)} a ${dCurta(m.fim)} ${m.fim.slice(0,4)}`:"Informe o período";
   aplicarRotulos(); syncDrive();
-  $("h-semanas").textContent=n(m.semanas)?`${n(m.semanas)} semanas letivas`:"";
+  $("h-semanas").textContent=anual()?"Relatório anual":n(m.semanas)?`${n(m.semanas)} semanas letivas`:"";
 }
 
 /* ---------- Ações de extensão ---------- */
@@ -1249,7 +1306,7 @@ function renderPainel(){
   const aviso=[];
   if(viewingSent) aviso.push(`<div class="ok">Visualizando relatório enviado em ${new Date(viewingSent).toLocaleString("pt-BR")}. <button class="btn" type="button" id="btn-sair-envio" style="margin-left:8px">Voltar ao meu preenchimento</button></div>`);
   else if(s.exemplo) aviso.push(`<div class="alerta">Painel de <b>exemplo</b>. Os números são do relatório da Odontologia, com a divisão semanal por situação estimada apenas para ilustrar.</div>`);
-  if(T.total&&TT.total&&T.total!==TT.total) aviso.push(`<div class="alerta">O total por ${tx("turma")} (${fmt(TT.total)}) não confere com o total semanal (${fmt(T.total)}).</div>`);
+  if(T.total&&TT.total&&T.total!==TT.total) aviso.push(`<div class="alerta">O total por ${tx("turma")} (${fmt(TT.total)}) não confere com o total ${anual()?"mensal":"semanal"} (${fmt(T.total)}).</div>`);
   $("p-aviso").innerHTML=aviso.join("");
   const sair=$("btn-sair-envio"); if(sair) sair.onclick=()=>{viewingSent=null;loadDraft();fillForm();renderPainel();};
 
@@ -1285,7 +1342,7 @@ function renderPainel(){
     const pico=W.reduce((a,r)=>rowTotal(r)>rowTotal(a)?r:a,W[0]);
     $("leg-semanal").innerHTML=statusAtivos(T).map(([f,l])=>`<span><i class="c-${f}"></i>${l}</span>`).join("");
     $("l-semanal").hidden=false;
-    $("l-semanal").innerHTML=`<b>Leitura:</b> o pico de ${T.esp?"atendimentos":"agendamentos"} foi na semana de ${esc(pico.label||"")} (${fmt(rowTotal(pico))}). A média foi de ${fmt(Math.round(T.total/W.length))} ${T.esp?"registros":"agendamentos"} por semana.`;
+    $("l-semanal").innerHTML=`<b>Leitura:</b> o pico de ${T.esp?"atendimentos":"agendamentos"} foi ${anual()?"no mês de":"na semana de"} ${esc(pico.label||"")} (${fmt(rowTotal(pico))}). A média foi de ${fmt(Math.round(T.total/W.length))} ${T.esp?"registros":"agendamentos"} por ${anual()?"mês":"semana"}.`;
   }
 
   // Donut
@@ -1338,6 +1395,7 @@ function renderPainel(){
       const fotos=FOTOS[a.id]||[];
       return `<div class="p-acao"><h3>${esc(a.titulo||a.tipo)}</h3><div class="meta">${meta}</div>${a.descricao?`<p style="margin:0" class="obs">${esc(a.descricao)}</p>`:""}${fotos.length?`<div class="p-fotos">${fotos.map(f=>`<figure><img src="${f.src}" alt="${esc(f.legenda||"Evidência da ação")}">${f.legenda?`<figcaption>${esc(f.legenda)}</figcaption>`:""}</figure>`).join("")}</div>`:""}</div>`}).join("");
   }
+  $("card-destano").hidden=!(anual()&&m.destAno); $("p-destano").textContent=m.destAno||"";
   $("card-obs").hidden=!m.obs; $("p-obs").textContent=m.obs||"";
   const resp=[m.resp,m.cargo,m.matr?"Matrícula "+m.matr:""].filter(Boolean).join(" · ");
   $("p-foot").innerHTML=[m.fonte?"Fonte: "+esc(m.fonte):"",T.total?`${fmt(T.total)} registros analisados`+(m.inicio&&m.fim?` (${dBR(m.inicio)} a ${dBR(m.fim)})`:""):"",resp?"Elaborado por "+esc(resp):""].filter(Boolean).join(" · ");
@@ -1354,6 +1412,25 @@ function show(v){
 }
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>show(b.dataset.v)));
 $("btn-ver").onclick=()=>{show("painel");window.scrollTo(0,0)};
+function msgRasc(h,k){const b=$("rasc-msg"); b.hidden=false; b.className=k; b.innerHTML=h; setTimeout(()=>{b.hidden=true;},8000);}
+$("btn-rasc-salvar").onclick=async()=>{
+  try{
+    const m=state.meta, dados={versao:"27/11/2026",salvoEm:new Date().toISOString(),state:Object.assign(clone(state),{exemplo:false})};
+    const nome=["Rascunho",(clinicaNome(m)||"").split(" · ")[0],(m.campus||"").replace("Campus ",""),m.tipo==="anual"?m.ano:(m.mesRef||"")].filter(Boolean).join("_").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9_-]+/g,"_")+".json";
+    await baixar(new Blob([JSON.stringify(dados,null,1)],{type:"application/json"}),nome);
+    msgRasc("Rascunho salvo em Downloads. Para continuar em outro computador, use <b>Abrir rascunho</b> e escolha esse arquivo. Fotos e documentos anexados não vão no rascunho.","ok");
+  }catch(e){ msgRasc("Não foi possível salvar o rascunho agora. Tente de novo.","alerta"); }
+};
+$("rasc-file").addEventListener("change",async e=>{
+  const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  try{
+    const d=JSON.parse(await f.text()), st=d&&d.state;
+    if(!st||!st.meta||!Array.isArray(st.semanas)) throw new Error("formato");
+    viewingSent=null; state=Object.assign(vazio(),st); state.meta=Object.assign(vazio().meta,st.meta); state.exemplo=false;
+    save(); fillForm(); show("preencher");
+    msgRasc("Rascunho aberto. Confira os dados e, se houver, adicione de novo as fotos e os documentos.","ok");
+  }catch(err){ msgRasc("Este arquivo não é um rascunho do painel. Escolha o arquivo .json salvo pelo botão <b>Salvar rascunho em arquivo</b>.","alerta"); }
+});
 $("btn-limpar").onclick=()=>{viewingSent=null;state=vazio();save();fillForm();};
 $("btn-exemplo").onclick=()=>{viewingSent=null;state=clone(EXEMPLO);save();fillForm();};
 function loadDraft(){try{const raw=localStorage.getItem(LS_KEY);state=raw?JSON.parse(raw):clone(EXEMPLO);}catch(e){state=clone(EXEMPLO);}}
@@ -1434,6 +1511,7 @@ function nomeArquivo(){
     else if(a.y===b.y) periodo=`${MES[a.m]}_a_${MES[b.m]}_${b.y}`;
     else periodo=`${MES[a.m]}_${a.y}_a_${MES[b.m]}_${b.y}`;
   }
+  if(m.tipo==="anual") return ["Relatorio_Anual",slug(clinicaNome(m).split(" · ")[0]),slug((m.campus||"").replace("Campus ","")),m.ano||""].filter(Boolean).join("_")+".pdf";
   return ["Relatorio_Quantitativo",slug(clinicaNome(m).split(" · ")[0]),slug((m.campus||"").replace("Campus ","")),periodo].filter(Boolean).join("_")+".pdf";
 }
 function baseNome(){return nomeArquivo().replace(/^Relatorio_Quantitativo/,"").replace(/\.pdf$/,"")}
@@ -1554,9 +1632,9 @@ function montarPDF(){
   font(7,"bold"); ink(C.gold); T_(("Universidade de Vassouras"+(m.campus?" · "+m.campus:"")).toUpperCase(),M+6,17);
   font(18,"bold"); ink(C.white); T_(clinicaNome(m)||"Relatório Quantitativo de Atendimentos",M+6,26);
   font(7.5); ink(C.pink); T_(rot(m).sub,M+6,32);
-  font(7,"bold"); ink(C.gold); T_("PERÍODO ANALISADO",PW-M-6,17,{align:"right"});
-  font(12); ink(C.white); T_(m.inicio&&m.fim?`${dCurta(m.inicio)} a ${dCurta(m.fim)} ${m.fim.slice(0,4)}`:"Período não informado",PW-M-6,24,{align:"right"});
-  if(n(m.semanas)){font(7.5); ink(C.pink); T_(`${n(m.semanas)} semanas letivas`,PW-M-6,30,{align:"right"});}
+  font(7,"bold"); ink(C.gold); T_(anual()?"RELATÓRIO ANUAL":"PERÍODO ANALISADO",PW-M-6,17,{align:"right"});
+  font(12); ink(C.white); T_(anual()?`Ano de ${m.ano||""}`:m.mesRef?rotMes(m.mesRef):m.inicio&&m.fim?`${dCurta(m.inicio)} a ${dCurta(m.fim)} ${m.fim.slice(0,4)}`:"Período não informado",PW-M-6,24,{align:"right"});
+  if(!anual()&&n(m.semanas)){font(7.5); ink(C.pink); T_(`${n(m.semanas)} semanas letivas`,PW-M-6,30,{align:"right"});}
 
   // KPIs
   const k=kpisBase(T,m,"-");
@@ -1589,7 +1667,7 @@ function montarPDF(){
   const lSem=leituraDe("l-semanal"), lDon=leituraDe("l-donut");
   const wA=CW*0.63, wB=CW-wA-5, xB=M+wA+5;
   const hTop=Math.max(19+46+8+alturaLeitura(wA-10,lSem), 19+50+alturaLeitura(wB-10,lDon))+5;
-  caixa(M,y,wA,hTop,tx("pSem"),"Total por semana letiva, segmentado por situação do atendimento");
+  caixa(M,y,wA,hTop,tx("pSem"),anual()?"Total por mês do ano, segmentado por situação do atendimento":"Total por semana letiva, segmentado por situação do atendimento");
   const W=s.semanas.filter(r=>rowTotal(r)>0);
   if(W.length){
     const px=M+6, py=y+21, pw=wA-12, ph=36, max=Math.max(...W.map(rowTotal)), slot=pw/W.length, bw=Math.min(14,slot*0.55);
@@ -1687,6 +1765,11 @@ function montarPDF(){
     y+=hBox+5;
   }
 
+  if(anual()&&m.destAno){
+    font(7.5); const l=wrap(m.destAno,CW-10), h=17+l.length*3.6;
+    if(y+h>PH-14) y=novaPagina();
+    caixa(M,y,CW,h,"Destaques do ano"); font(7.5); ink(C.fg); T_(l,M+5,y+13); y+=h+5;
+  }
   if(m.obs&&!obsFeita) blocoObs();
 
   // Ações de extensão e evidências
@@ -1770,8 +1853,23 @@ function montarPDF(){
 
 async function gerarPDF(btn){
   const box=$("pdf-msg"), say=(h,k)=>{box.hidden=false;box.className=k;box.innerHTML=h;};
+  const m0=state.meta, falta=[];
+  if(!m0.campus) falta.push({t:"campus",id:"m-campus"});
+  if(!m0.clinica) falta.push({t:"clínica ou núcleo",id:"m-clinica"});
+  else if(m0.clinica==="Outra"&&!String(m0.outra||"").trim()) falta.push({t:"nome da unidade",id:"m-outra"});
+  if(m0.tipo==="anual"){ if(!/^\d{4}$/.test(String(m0.ano||"").trim())) falta.push({t:"ano de referência",id:"m-ano"}); }
+  else if(!m0.mesRef) falta.push({t:"mês de referência",id:"m-mesref"});
+  if(!String(m0.resp||"").trim()) falta.push({t:"responsável pelo preenchimento",id:"m-resp"});
+  if(!totalsOf(state.semanas).total) falta.push({t:"atendimentos da seção B",id:"t-semanas"});
+  if(falta.length){
+    show("preencher");
+    const em=$("envio-msg"); em.hidden=false; em.className="alerta";
+    em.innerHTML="<b>Antes de gerar o PDF, preencha:</b> "+falta.map(f=>esc(f.t)).join(", ")+".";
+    em.scrollIntoView({behavior:"smooth",block:"center"});
+    const alvo=$(falta[0].id); if(alvo&&alvo.focus) setTimeout(()=>{try{alvo.focus();}catch(e){}},400);
+    return;
+  }
   show("painel");
-  if(!totalsOf(state.semanas).total){say("Preencha ao menos os atendimentos por semana antes de gerar o relatório.","alerta");return}
   if(!window.jspdf){say("O gerador de PDF não carregou. Verifique a conexão com a internet e recarregue a página.","alerta");return}
   const label=btn.textContent; btn.disabled=true; btn.textContent="Gerando…";
   try{
@@ -1819,14 +1917,34 @@ const HASH="b9dc9bbbc3b5f20a54c267cbf1925006b4cb96fe73ab8c665bb67afbbe2ce424", K
 const $=id=>document.getElementById(id);
 const ok=()=>{try{return sessionStorage.getItem(KEY)===HASH||localStorage.getItem(KEY)===HASH}catch(e){return false}};
 function mostrar(){ const dentro=ok(); $("login").hidden=dentro; $("app").hidden=!dentro; }
+function sha256js(str){
+  const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const bytes=unescape(encodeURIComponent(str)).split("").map(c=>c.charCodeAt(0));
+  const l=bytes.length*8; bytes.push(0x80); while(bytes.length%64!==56) bytes.push(0);
+  for(let i=7;i>=0;i--) bytes.push(i>3?0:(l>>>(i*8))&255);
+  let H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const rotr=(x,n)=>(x>>>n)|(x<<(32-n));
+  for(let o=0;o<bytes.length;o+=64){
+    const w=new Array(64);
+    for(let i=0;i<16;i++) w[i]=(bytes[o+i*4]<<24)|(bytes[o+i*4+1]<<16)|(bytes[o+i*4+2]<<8)|bytes[o+i*4+3];
+    for(let i=16;i<64;i++){const s0=rotr(w[i-15],7)^rotr(w[i-15],18)^(w[i-15]>>>3), s1=rotr(w[i-2],17)^rotr(w[i-2],19)^(w[i-2]>>>10); w[i]=(w[i-16]+s0+w[i-7]+s1)|0;}
+    let [a,b,c,d,e,f,g,h]=H;
+    for(let i=0;i<64;i++){const S1=rotr(e,6)^rotr(e,11)^rotr(e,25), ch=(e&f)^(~e&g), t1=(h+S1+ch+K[i]+w[i])|0, S0=rotr(a,2)^rotr(a,13)^rotr(a,22), mj=(a&b)^(a&c)^(b&c), t2=(S0+mj)|0; h=g; g=f; f=e; e=(d+t1)|0; d=c; c=b; b=a; a=(t1+t2)|0;}
+    H=H.map((x,i)=>(x+[a,b,c,d,e,f,g,h][i])|0);
+  }
+  return H.map(x=>(x>>>0).toString(16).padStart(8,"0")).join("");
+}
 async function sha(t){
-  if(window.crypto&&crypto.subtle){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
-  return "";
+  try{ if(window.crypto&&crypto.subtle){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");} }catch(e){}
+  return sha256js(t);
 }
 $("login-form").addEventListener("submit",async e=>{
   e.preventDefault();
-  const h=await sha($("lg-user").value.trim().toLowerCase()+":"+$("lg-pass").value);
-  if(h!==HASH){ $("lg-erro").hidden=false; $("lg-pass").value=""; $("lg-pass").focus(); return; }
+  const erro=t=>{ $("lg-erro").textContent=t; $("lg-erro").hidden=false; };
+  const u=$("lg-user").value.trim().toLowerCase(), sn=$("lg-pass").value.trim();
+  if(!u||!sn){ erro("Preencha o usuário e a senha."); return; }
+  let h=""; try{ h=await sha(u+":"+sn); }catch(err){ h=""; }
+  if(h!==HASH){ erro("Usuário ou senha incorretos. Confira se digitou exatamente como recebeu (a senha diferencia letras maiúsculas e minúsculas) e tente de novo."); $("lg-pass").value=""; $("lg-pass").focus(); return; }
   try{ sessionStorage.setItem(KEY,HASH); if($("lg-lembrar").checked) localStorage.setItem(KEY,HASH); }catch(err){}
   $("lg-erro").hidden=true; $("lg-pass").value=""; mostrar(); window.scrollTo(0,0);
 });
