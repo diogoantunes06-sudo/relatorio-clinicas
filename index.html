@@ -1236,7 +1236,7 @@ function kpisBase(T,m,vazio){
   return k;
 }
 function kpisAcomp(m){
-  return [["novos",rot(m).novos],["retornos","Retornos"],["espera","Lista de espera"],["encam","Encaminhamentos"]].filter(([f])=>m[f]!==""&&m[f]!=null&&!isNaN(Number(m[f]))).map(([f,l])=>[fmt(n(m[f])),l]);
+  return [["novos",rot(m).novos],["retornos","Retornos"],["espera",rot(m).nucleo?"Aguardando atendimento":"Lista de espera"],["encam","Encaminhamentos"]].filter(([f])=>m[f]!==""&&m[f]!=null&&!isNaN(Number(m[f]))).map(([f,l])=>[fmt(n(m[f])),l]);
 }
 const ESPEC={
   NAE:{campos:[
@@ -1667,6 +1667,7 @@ function montarPDF(){
   const lSem=leituraDe("l-semanal"), lDon=leituraDe("l-donut");
   const wA=CW*0.63, wB=CW-wA-5, xB=M+wA+5;
   const hTop=Math.max(19+46+8+alturaLeitura(wA-10,lSem), 19+50+alturaLeitura(wB-10,lDon))+5;
+  if(y+hTop>PH-14) y=novaPagina();
   caixa(M,y,wA,hTop,tx("pSem"),anual()?"Total por mês do ano, segmentado por situação do atendimento":"Total por semana letiva, segmentado por situação do atendimento");
   const W=s.semanas.filter(r=>rowTotal(r)>0);
   if(W.length){
@@ -1803,7 +1804,7 @@ function montarPDF(){
 
     // Anexo I: registro fotográfico (2 x 2 fotos por página)
     if(refs.length){
-      const cols=2, gapX=8, cw=(CW-gapX)/cols, ch=62, capH=9;
+      const cols=2, gapX=8, cw=(CW-gapX)/cols, ch=128, capH=9;
       const topoAnexo=()=>{
         y=novaPagina();
         font(14,"bold"); ink(C.wine2); T_("Anexo I · Registro fotográfico das ações de extensão",M,y+6);
